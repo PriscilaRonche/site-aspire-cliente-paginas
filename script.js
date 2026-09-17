@@ -1,0 +1,170 @@
+// Script file for Aspire Confecção e Estamparia website interconnections
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize Lucide Icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
+    // 2. Header Scroll Effect
+    const header = document.querySelector('.header');
+    const handleScroll = () => {
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    };
+    window.addEventListener('scroll', handleScroll);
+    // Initial check on load
+    handleScroll();
+
+    // 3. Mobile Toggle Menu & Dropdown Interaction
+    const mobileToggle = document.getElementById('mobileToggle');
+    const navMenu = document.getElementById('navMenu');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const dropdownTriggers = document.querySelectorAll('.nav-item-has-dropdown');
+
+    const toggleMenu = () => {
+        mobileToggle.classList.toggle('open');
+        navMenu.classList.toggle('open');
+        const isOpen = navMenu.classList.contains('open');
+        mobileToggle.setAttribute('aria-label', isOpen ? 'Fechar Menu' : 'Abrir Menu');
+    };
+
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleMenu);
+    }
+
+    // Toggle dropdowns on mobile click / touch
+    dropdownTriggers.forEach(dropdown => {
+        const triggerBtn = dropdown.querySelector('.nav-dropdown-trigger');
+        if (triggerBtn) {
+            triggerBtn.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    dropdown.classList.toggle('open');
+                }
+            });
+        }
+    });
+
+    // Close menu when clicking on nav links (except triggers)
+    navLinks.forEach(link => {
+        if (!link.classList.contains('nav-dropdown-trigger')) {
+            link.addEventListener('click', () => {
+                if (navMenu && navMenu.classList.contains('open')) {
+                    toggleMenu();
+                }
+            });
+        }
+    });
+
+    // 4. FAQ Accordion Interaction
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+        const trigger = item.querySelector('.faq-trigger');
+        const panel = item.querySelector('.faq-panel');
+
+        trigger.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+
+            // Close all active items
+            faqItems.forEach(otherItem => {
+                otherItem.classList.remove('active');
+                otherItem.querySelector('.faq-trigger').setAttribute('aria-expanded', 'false');
+                otherItem.querySelector('.faq-panel').style.maxHeight = null;
+            });
+
+            // Toggle current item
+            if (!isActive) {
+                item.classList.add('active');
+                trigger.setAttribute('aria-expanded', 'true');
+                // Calculate dynamic panel height (scrollHeight + buffer)
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+            } else {
+                item.classList.remove('active');
+                trigger.setAttribute('aria-expanded', 'false');
+                panel.style.maxHeight = null;
+            }
+        });
+    });
+
+    // 5. Active Section Highlighter on Scroll
+    const sections = document.querySelectorAll('section[id]');
+    
+    const highlightSection = () => {
+        const scrollPosition = window.scrollY + 100; // Offset matching the header height and scroll padding
+
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.offsetHeight;
+            const sectionId = section.getAttribute('id');
+            const targetLink = document.querySelector(`.nav-link[href="#${sectionId}"]`);
+
+            if (targetLink) {
+                if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    targetLink.classList.add('active');
+                }
+            }
+        });
+    };
+
+    window.addEventListener('scroll', highlightSection);
+    // Initial check
+    highlightSection();
+
+    // 6. Reveal animations on scroll (Intersection Observer)
+    const observeOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.05
+    };
+
+    const revealCallback = (entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                observer.unobserve(entry.target); // Trigger only once
+            }
+        });
+    };
+
+    const observer = new IntersectionObserver(revealCallback, observeOptions);
+
+    // Apply fade transition effects to cards and section headers
+    const elementsToReveal = document.querySelectorAll(
+        '.service-card, .diff-card, .showcase-card, .audience-card, .step-item, .section-header, .about-container'
+    );
+
+    // Style helper to pre-setup animations in CSS (injecting class styles dynamically)
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `
+        .service-card, .diff-card, .showcase-card, .audience-card, .step-item, .section-header, .about-container {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .service-card.revealed, .diff-card.revealed, .showcase-card.revealed, .audience-card.revealed, .step-item.revealed, .section-header.revealed, .about-container.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Add delays for grid items */
+        .services-grid .service-card:nth-child(2) { transition-delay: 0.1s; }
+        .services-grid .service-card:nth-child(3) { transition-delay: 0.2s; }
+        .differentials-grid .diff-card:nth-child(2) { transition-delay: 0.1s; }
+        .differentials-grid .diff-card:nth-child(3) { transition-delay: 0.2s; }
+        .showcase-images .showcase-card:nth-child(2) { transition-delay: 0.1s; }
+        .showcase-images .showcase-card:nth-child(3) { transition-delay: 0.2s; }
+        .audience-grid .audience-card:nth-child(2) { transition-delay: 0.1s; }
+        .audience-grid .audience-card:nth-child(3) { transition-delay: 0.2s; }
+        .steps-timeline .step-item:nth-child(2) { transition-delay: 0.1s; }
+        .steps-timeline .step-item:nth-child(3) { transition-delay: 0.2s; }
+        .steps-timeline .step-item:nth-child(4) { transition-delay: 0.3s; }
+    `;
+    document.head.appendChild(styleSheet);
+
+    elementsToReveal.forEach(el => observer.observe(el));
+});
